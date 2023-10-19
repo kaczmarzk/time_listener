@@ -1,7 +1,7 @@
 name: time_listener
 description: An extremely easy-to-use flutter plugin that allows you to listen time changes.
-version: 0.0.1
-homepage:
+version: 0.0.2
+homepage: https://github.com/kaczmarzk/time_listener
 
 environment:
   sdk: '>=3.1.1 <4.0.0'

@@ -1,0 +1,1 @@
+enum CheckInterval { seconds, minutes }
