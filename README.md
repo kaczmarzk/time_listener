@@ -1,25 +1,23 @@
+## time_listener
 An extremely easy-to-use flutter plugin that allows you to listen time changes.
 
-## Features
+### Features
 
+This package makes it easy to listen for the device's time change using a dedicated stream.
+The code responsible for checking the time difference is run in a isolate, so you don't have to worry about performance.
 
+### Usage
 
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+To start listening, create instances of the class and call the listen method on it.
+Stream  event with the new date will come every second.
+  ```dart
+final listener = TimeListener();
+listener.listen((DateTime date) => print(date));
 ```
 
-## Additional information
+Remember to stop listening the moment you no longer need it.
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+  ```dart
+ listener.cancel();
+```
+  
