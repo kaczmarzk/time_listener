@@ -15,8 +15,10 @@ class TimeListener implements ITimeListener {
 
   @override
   Future<void> listen(Output output) async {
-    if (_controller == null && _subscription == null) return _create(output);
-    return _subscription!.onData(output);
+    if (_subscription != null) return _subscription!.onData(output);
+
+    _controller = await IsolateController.spawn<DateTime>(_handleDateChanged);
+    _subscription = _controller!.stream.listen(output);
   }
 
   @override
@@ -25,24 +27,21 @@ class TimeListener implements ITimeListener {
     _subscription?.cancel();
     _controller?.close();
   }
-
-  Future<void> _create(Output output) async {
-    _controller = await IsolateController.spawn<DateTime>(_handleDateChanged);
-    _subscription = _controller!.stream.listen(output);
-  }
 }
 
 extension _DateListenerExt on TimeListener {
   Future<void> _handleDateChanged(Output callback) async {
     DateTime date = DateTime.now();
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (_) {
-        final now = DateTime.now().simple;
-        if (!now.isAfter(date)) return;
-        callback(now);
-        date = now;
-      },
-    );
+    while (true) {
+      await Future.delayed(
+        const Duration(seconds: 1),
+        () {
+          final now = DateTime.now().simple;
+          if (!now.isAfter(date)) return;
+          callback(now);
+          date = now;
+        },
+      );
+    }
   }
 }
