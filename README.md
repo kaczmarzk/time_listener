@@ -1,4 +1,6 @@
 # time_listener
+[![pub package](https://img.shields.io/pub/v/time_listener.svg)](https://pub.dev/packages/time_listener)
+
 An extremely easy-to-use flutter plugin that allows you to listen time changes.
 
 ### Features
