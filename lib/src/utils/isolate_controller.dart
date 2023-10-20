@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:isolate';
 
-typedef IsolateHandler<Out> = FutureOr<void> Function(void Function(Out out) send);
+typedef IsolateHandler<Out> = FutureOr<void> Function(
+    void Function(Out out) send);
 
 class IsolateController<Out> {
   IsolateController._({
@@ -20,7 +21,8 @@ class IsolateController<Out> {
     }
   }
 
-  static Future<IsolateController<Out>> spawn<Out>(IsolateHandler<Out> handler) async {
+  static Future<IsolateController<Out>> spawn<Out>(
+      IsolateHandler<Out> handler) async {
     final receivePort = ReceivePort();
     final argument = _IsolateArgument<Out>(
       handler: handler,
@@ -45,7 +47,7 @@ class IsolateController<Out> {
     }
 
     rcvSubscription = receivePort.listen(
-          (message) {
+      (message) {
         if (message is Out) {
           outputController.add(message);
         } else if (message == #exit) {
