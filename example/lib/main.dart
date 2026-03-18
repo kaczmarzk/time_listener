@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:time_listener/time_listener.dart';
 
@@ -30,22 +32,28 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late TimeListener _listener;
-  late DateTime _time;
+  TimeListener? _listener;
+  StreamSubscription<DateTime>? _subscription;
+  DateTime _time = DateTime.now();
 
   @override
   void initState() {
-    _time = DateTime.now();
-    _listener = TimeListener.create(interval: CheckInterval.seconds);
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _listener.listen(_handleTimeChange),
-    );
     super.initState();
+    _init();
   }
 
-  void _handleTimeChange(DateTime dt) {
-    _time = dt;
-    setState(() {});
+  Future<void> _init() async {
+    _listener = await TimeListener.create(interval: CheckInterval.seconds);
+    _subscription = _listener!.stream.listen((dt) {
+      if (mounted) setState(() => _time = dt);
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _listener?.dispose();
+    super.dispose();
   }
 
   @override

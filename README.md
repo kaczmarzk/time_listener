@@ -1,42 +1,65 @@
 # time_listener
 [![pub package](https://img.shields.io/pub/v/time_listener.svg)](https://pub.dev/packages/time_listener)
 
-An extremely easy-to-use flutter plugin that allows you to listen time changes.
+A Flutter plugin for listening to time changes via a stream. The time-checking loop runs in an isolate, keeping the UI thread free.
 
-### Features
+## Features
 
-This package makes very easy to listen time changes using a stream.
-The code responsible for checking time diff is run in an isolate, so you don't have to worry about performance.
+- Stream-based API — subscribe with any stream listener or `StreamBuilder`
+- Isolate-backed — no impact on UI performance
+- Two intervals: per-minute (default) or per-second
 
-### Usage
+## Usage
 
-To start listening create instance of the class and call "listen" method on it.
-Stream event with the new date will come every second.
+Create a `TimeListener` with the async factory, then subscribe to `.stream`:
 
 ```dart
-  // actively listen for time updates with the interval specified in parameter
-  // until listener.cancel() is called
-  final listener = TimeListener()..listen((DateTime dt) {
-  print('${dt.hour}:${dt.minute}:${dt.second}');
-  });
+final listener = await TimeListener.create();
 
-  // don't forget to cancel listener when it is no longer needed
-  // so the program doesn't run forever
-  await listener.cancel();
-```  
-To specify interval (by default every minute) you can use custom factory.
+final subscription = listener.stream.listen((DateTime dt) {
+  print('${dt.hour}:${dt.minute}');
+});
+
+// When no longer needed:
+subscription.cancel();
+listener.dispose();
+```
+
+Use `CheckInterval.seconds` for per-second updates:
+
 ```dart
+final listener = await TimeListener.create(interval: CheckInterval.seconds);
 
-  // below code will emit new DateTime every minute without seconds precision
-  // output - 21:37:00
-  final listener = TimeListener()..listen((DateTime dt) {
+listener.stream.listen((DateTime dt) {
   print('${dt.hour}:${dt.minute}:${dt.second}');
-  });
+});
+```
 
-  // but if you need u can specify more precise interval with custom factory
-  // output - 21:37:24
-  final listener = TimeListener.create(interval: CheckInterval.seconds)..listen((DateTime dt) {
-  print('${dt.hour}:${dt.minute}:${dt.second}');
-  });
-```  
+In a Flutter widget, use `StreamBuilder`:
 
+```dart
+FutureBuilder<TimeListener>(
+  future: TimeListener.create(),
+  builder: (context, snapshot) {
+    if (!snapshot.hasData) return const SizedBox();
+    return StreamBuilder<DateTime>(
+      stream: snapshot.data!.stream,
+      builder: (context, snap) {
+        final dt = snap.data ?? DateTime.now();
+        return Text('${dt.hour}:${dt.minute.toString().padLeft(2, '0')}');
+      },
+    );
+  },
+)
+```
+
+## API
+
+| Member | Description |
+|--------|-------------|
+| `TimeListener.create({CheckInterval interval})` | Creates and starts the listener. Default interval: `CheckInterval.minutes`. |
+| `stream` | `Stream<DateTime>` that emits on each interval tick. |
+| `interval` | The `CheckInterval` this instance was created with. |
+| `dispose()` | Shuts down the isolate. Call when the listener is no longer needed. |
+
+`CheckInterval` values: `minutes`, `seconds`.

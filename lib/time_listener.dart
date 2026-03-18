@@ -4,63 +4,50 @@ import 'dart:async';
 
 import 'package:time_listener/src/enum/check_interval.dart';
 import 'package:time_listener/src/extension/date_time_ext.dart';
-import 'package:time_listener/src/i_time_listener.dart';
-import 'package:time_listener/src/types/output_type.dart';
 import 'package:time_listener/src/utils/isolate_controller.dart';
 
 export 'package:time_listener/src/enum/check_interval.dart';
 
-class TimeListener implements ITimeListener {
-  TimeListener._({this.interval = CheckInterval.minutes});
-
-  factory TimeListener() => TimeListener._(
-        interval: CheckInterval.minutes,
-      );
-
-  factory TimeListener.create({
-    CheckInterval interval = CheckInterval.minutes,
-  }) =>
-      TimeListener._(
-        interval: interval,
-      );
-
-  final CheckInterval interval;
-
-  IsolateController<DateTime>? _controller;
-  Timer? _timer;
-  StreamSubscription<DateTime>? _subscription;
-
-  @override
-  Future<void> listen(Output output) async {
-    if (_subscription != null) return _subscription!.onData(output);
-
-    _controller = await IsolateController.spawn<DateTime>(_handleDateChanged);
-    _subscription = _controller!.stream.listen(output);
-  }
-
-  @override
-  void cancel() {
-    _timer?.cancel();
-    _subscription?.cancel();
-    _controller?.close();
+Future<void> _timeLoop(
+  CheckInterval interval,
+  void Function(DateTime) send,
+) async {
+  DateTime last = _truncate(DateTime.now(), interval);
+  while (true) {
+    await Future.delayed(const Duration(seconds: 1));
+    final now = _truncate(DateTime.now(), interval);
+    if (now.isAfter(last)) {
+      send(now);
+      last = now;
+    }
   }
 }
 
-extension _DateListenerExt on TimeListener {
-  DateTime get _now => switch (interval) {
-        CheckInterval.minutes => DateTime.now().toMinutes,
-        CheckInterval.seconds => DateTime.now().toSeconds,
-      };
+DateTime _truncate(DateTime dt, CheckInterval interval) => switch (interval) {
+      CheckInterval.minutes => dt.toMinutes,
+      CheckInterval.seconds => dt.toSeconds,
+    };
 
-  Future<void> _handleDateChanged(Output callback) async {
-    DateTime date = _now;
-    while (true) {
-      await Future.delayed(const Duration(seconds: 1), () {
-        final n = _now;
-        if (!n.isAfter(date)) return;
-        callback(n);
-        date = n;
-      });
-    }
+class TimeListener {
+  TimeListener._({
+    required this.interval,
+    required IsolateController<DateTime> controller,
+  }) : _controller = controller;
+
+  static Future<TimeListener> create({
+    CheckInterval interval = CheckInterval.minutes,
+  }) async {
+    final controller = await IsolateController.spawn<CheckInterval, DateTime>(
+      _timeLoop,
+      interval,
+    );
+    return TimeListener._(interval: interval, controller: controller);
   }
+
+  final CheckInterval interval;
+  final IsolateController<DateTime> _controller;
+
+  Stream<DateTime> get stream => _controller.stream;
+
+  void dispose() => _controller.close();
 }
